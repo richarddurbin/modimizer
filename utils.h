@@ -5,14 +5,14 @@
  * Description: includes standard system headers and own headers
  * Exported functions:
  * HISTORY:
- * Last edited: Jan 12 13:09 2019 (rd109)
+ * Last edited: Jun  2 09:59 2020 (rd109)
  * Created: Wed Jan  5 16:13:48 2011 (rd)
  *-------------------------------------------------------------------
  */
 
 #include <stdio.h>		/* FILE etc. */
 #include <stdlib.h>		/* malloc(), free(), ... notation */
-#include <stdint.h>		/* for standard size int types */
+#include <inttypes.h>		/* for standard size int types and their print macros */
 #include <string.h>		/* memset() */
 #include <limits.h>		/* INT_MAX etc. */
 #include <assert.h>
@@ -47,14 +47,21 @@ const static U64 U64MAX = 0xffffffffffffffff ;
 #include "hash.h"
 
 void die (char *format, ...) ;
+void warn (char *format, ...) ;
+
 void *myalloc (size_t size) ;
 void *mycalloc (size_t number, size_t size) ;
 #define	new(n,type)	(type*)myalloc((n)*sizeof(type))
 #define	new0(n,type)	(type*)mycalloc((n),sizeof(type))
 #define resize(x,nOld,nNew,T) { T* z = new((nNew),T) ; if (nOld < nNew) memcpy(z,x,(nOld)*sizeof(T)) ; else memcpy(z,x,(nNew)*sizeof(T)) ; free(x) ; x = z ; }
 
+void  storeCommandLine (int argc, char *argv[]) ;
+char *getCommandLine (void) ;
+
 char *fgetword (FILE *f) ;	/* not threadsafe */
+FILE *fzopen (const char* path, const char* mode) ; /* will open gzip files silently */
 FILE *fopenTag (char* root, char* tag, char* mode) ;
+
 void timeUpdate (FILE *f) ;	/* print time usage since last call to file */
 void timeTotal (FILE *f) ;	/* print full time usage since first call to timeUpdate */
 

@@ -5,15 +5,13 @@
  * Description:
  * Exported functions:
  * HISTORY:
- * Last edited: Feb  1 18:31 2019 (rd109)
+ * Last edited: Jul 22 21:07 2019 (rd109)
  * Created: Sun Nov 11 17:21:40 2018 (rd109)
  *-------------------------------------------------------------------
  */
 
 #include "seqio.h"
 #include <ctype.h>
-
-static char *typeName[] = { "FASTA", "FASTQ", "BINARY" } ;
 
 int main (int argc, char *argv[])
 {
@@ -23,7 +21,7 @@ int main (int argc, char *argv[])
 
   if (!argc) *--argv = "-" ;	/* minor abuse, so that default is to read stdin */
   
-  SeqIO *si = seqIOopen (*argv, 0, TRUE) ;
+  SeqIO *si = seqIOopenRead (*argv, 0, TRUE) ;
   if (!si) die ("failed to open sequence file %s\n", *argv) ;
 
   U64 totLen = 0, n = 0 ;
@@ -39,7 +37,7 @@ int main (int argc, char *argv[])
 	}
     }
   printf ("%s file, %llu sequences >= 0, %llu total, %.2f average\n",
-	  typeName[si->type], si->nSeq, totLen, totLen / (double) si->nSeq) ;
+	  seqIOtypeName[si->type], si->nSeq, totLen, totLen / (double) si->nSeq) ;
   int i ;
   U64 totUnprint = 0 ;
   printf ("bases\n") ;
@@ -52,8 +50,12 @@ int main (int argc, char *argv[])
 
   if (si->isQual)
     { printf ("qualities\n") ;
+      U64 sum = 0 ;
       for (i = 0 ; i < 256 ; ++i)
-	if (totQual[i]) printf (" %3d %llu %4.1f %%\n", i, totQual[i], totQual[i]*100.0/totLen) ;
+	{ sum += totQual[i] ;
+	  if (totQual[i]) printf (" %3d %llu %4.1f %% %5.1f %%\n",
+				  i, totQual[i], totQual[i]*100.0/totLen, sum*100.0/totLen) ;
+	}
     }
   
   seqIOclose (si) ;

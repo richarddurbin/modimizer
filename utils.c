@@ -5,7 +5,8 @@
  * Description: core utility functions
  * Exported functions:
  * HISTORY:
- * Last edited: Nov 12 21:08 2018 (rd109)
+ * Last edited: Jun  2 10:03 2020 (rd109)
+ * * Feb 22 14:52 2019 (rd109): added fzopen()
  * Created: Thu Aug 15 18:32:26 1996 (rd)
  *-------------------------------------------------------------------
  */
@@ -27,6 +28,33 @@ void die (char *format, ...)
 
   exit (-1) ;
 }
+
+void warn (char *format, ...)
+{
+  va_list args ;
+
+  va_start (args, format) ;
+  fprintf (stderr, "WARNING: ") ;
+  vfprintf (stderr, format, args) ;
+  fprintf (stderr, "\n") ;
+  va_end (args) ;
+
+  exit (-1) ;
+}
+
+static char* commandLine = 0 ;
+
+void storeCommandLine (int argc, char **argv)
+{
+  int i, totLen = 0 ;
+  for (i = 0 ; i < argc ; ++i) totLen += 1 + strlen(argv[i]) ;
+  if (commandLine) free (commandLine) ;
+  commandLine = new (totLen, char) ;
+  strcpy (commandLine, argv[0]) ;
+  for (i = 1 ; i < argc ; ++i) { strcat (commandLine, " ") ; strcat (commandLine, argv[i]) ; }
+}
+
+char *getCommandLine (void) { return commandLine ; }
 
 long totalAllocated = 0 ;
 
@@ -72,6 +100,32 @@ char *fgetword (FILE *f)
   return buf ;
 }
 
+#define WITH_ZLIB
+#ifdef WITH_ZLIB
+#include <zlib.h>
+#endif
+
+FILE *fzopen(const char *path, const char *mode)
+{  /* very cool from https://stackoverflow.com/users/3306211/fernando-mut */
+#ifdef WITH_ZLIB
+  gzFile zfp;			/* fernando said *zfp - makes me worry.... */
+
+  /* try gzopen */
+  zfp = gzopen(path,mode);
+  if (zfp == NULL)
+    return fopen(path,mode);
+
+  /* open file pointer */
+  return funopen(zfp,
+                 (int(*)(void*,char*,int))gzread,
+                 (int(*)(void*,const char*,int))gzwrite,
+                 (fpos_t(*)(void*,fpos_t,int))gzseek,
+                 (int(*)(void*))gzclose);
+#else
+  return fopen(path,mode);
+#endif
+}
+
 FILE *fopenTag (char* root, char* tag, char* mode)
 {
   if (strlen (tag) > 30) die ("tag %s in fopenTag too long - should be < 30 chars", tag) ;
@@ -79,7 +133,7 @@ FILE *fopenTag (char* root, char* tag, char* mode)
   strcpy (fileName, root) ;
   strcat (fileName, ".") ;
   strcat (fileName, tag) ;
-  FILE *f = fopen (fileName, mode) ;
+  FILE *f = fzopen (fileName, mode) ;
   free (fileName) ;
   return f ;
 }

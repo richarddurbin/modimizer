@@ -5,7 +5,7 @@
  * Description:
  * Exported functions:
  * HISTORY:
- * Last edited: Feb  1 18:22 2019 (rd109)
+ * Last edited: Feb 17 10:13 2019 (rd109)
  * * Jan  4 00:14 2019 (rd109): completed findOverlaps and markBadReads and cleaned Read object
  * Created: Tue Nov  6 18:30:49 2018 (rd109)
  *-------------------------------------------------------------------
@@ -131,7 +131,7 @@ void readsetFileRead (Readset *rs, char *filename)
 
   memset (rs->ms->depth, 0, (rs->ms->max+1)*sizeof(U16)) ; /* rebuild depth from this file */
   dna2indexConv['N'] = dna2indexConv['n'] = 0 ; /* to get 2-bit encoding */
-  SeqIO *si = seqIOopen (filename, dna2indexConv, FALSE) ;
+  SeqIO *si = seqIOopenRead (filename, dna2indexConv, FALSE) ;
   while (seqIOread (si))
     { Read *read = arrayp(rs->reads, arrayMax(rs->reads), Read) ;
       read->len = si->seqLen ;

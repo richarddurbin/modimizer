@@ -5,7 +5,7 @@
  * Description:
  * Exported functions:
  * HISTORY:
- * Last edited: Feb  1 18:28 2019 (rd109)
+ * Last edited: Feb 17 21:17 2019 (rd109)
  * Created: Sat Oct 27 20:37:44 2018 (rd109)
  *-------------------------------------------------------------------
  */
@@ -95,7 +95,7 @@ void referenceFastaRead (Reference *ref, char *filename, BOOL isAdd)
   U64 totLen = 0 ;
   
   dna2indexConv['N'] = dna2indexConv['n'] = 0 ; /* to get 2-bit encoding */
-  SeqIO *si = seqIOopen (filename, dna2indexConv, FALSE) ;
+  SeqIO *si = seqIOopenRead (filename, dna2indexConv, FALSE) ;
   if (!si) die ("failed to read reference sequence file %s", filename) ;
   while (seqIOread (si)) 
     { int id ;
@@ -191,7 +191,7 @@ void queryProcess (Reference *ref, char *filename)
   Array seeds = 0 ;
 
   dna2indexConv['N'] = dna2indexConv['n'] = 0 ; /* to get 2-bit encoding */
-  SeqIO *si = seqIOopen (filename, dna2indexConv, FALSE) ;
+  SeqIO *si = seqIOopenRead (filename, dna2indexConv, FALSE) ;
   if (!si) die ("failed to read query sequence file %s", filename) ;
   while (seqIOread (si)) 
     { SeqhashRCiterator *mi = modRCiterator (ref->ms->hasher, sqioSeq(si), si->seqLen) ;
@@ -206,7 +206,7 @@ void queryProcess (Reference *ref, char *filename)
 	  else ++missed ;
 	}
       seqhashRCiteratorDestroy (mi) ;
-      fprintf (outFile, "Q\t%s\t%d\t%d miss, %d copy1, %d copy2, %d multi, %.2f hit\n",
+      fprintf (outFile, "Q\t%s\t%llu\t%d miss, %d copy1, %d copy2, %d multi, %.2f hit\n",
 	       sqioId(si), si->seqLen, missed, copy[1], copy[2], copy[3],
 	       (arrayMax(seeds)-missed)/(double)(arrayMax(seeds))) ;
 

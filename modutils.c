@@ -5,7 +5,7 @@
  * Description:
  * Exported functions:
  * HISTORY:
- * Last edited: Jan 30 16:16 2019 (rd109)
+ * Last edited: Feb 17 10:13 2019 (rd109)
  * Created: Wed Nov 14 22:31:47 2018 (rd109)
  *-------------------------------------------------------------------
  */
@@ -36,7 +36,7 @@ static BOOL addSequenceFile (Modset *ms, char *filename, BOOL is10x)
   U64 nSeq = 0, totLen = 0, totHash = 0 ;
 
   dna2indexConv['N'] = dna2indexConv['n'] = 0 ; /* to get 2-bit encoding */
-  SeqIO *si = seqIOopen (filename, dna2indexConv, FALSE) ; /* false for no qualities */
+  SeqIO *si = seqIOopenRead (filename, dna2indexConv, FALSE) ; /* false for no qualities */
   if (!si) return FALSE ;
   while (seqIOread (si))
     { ++nSeq ; totLen += si->seqLen ;
