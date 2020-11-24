@@ -26,7 +26,7 @@
  * Exported functions:
  *              See Header file: array.h (includes lots of macros)
  * HISTORY:
- * Last edited: Apr 13 01:53 2018 (rd)
+ * Last edited: Jun 20 12:57 2020 (rd109)
  * * Feb 14 11:21 2011 (rd): modified in 2009/10 by RD for stand-alone use
  * Created: Thu Dec 12 15:43:25 1989 (mieg)
  *-------------------------------------------------------------------
@@ -210,11 +210,11 @@ char    *uArrayBlock (Array a, int i, int n)
 
 /*************** writing and reading to files ***************/
 
-BOOL    arrayWrite (Array a, FILE *f)
+bool    arrayWrite (Array a, FILE *f)
 {
-  if (fwrite (a, sizeof(struct ArrayStruct), 1, f) != 1) return FALSE ;
-  if (fwrite (a->base, a->size, a->dim, f) != a->dim) return FALSE ;
-  return TRUE ;
+  if (fwrite (a, sizeof(struct ArrayStruct), 1, f) != 1) return false ;
+  if (fwrite (a->base, a->size, a->dim, f) != a->dim) return false ;
+  return true ;
 }
 
 Array   arrayRead (FILE *f)
@@ -240,12 +240,12 @@ Array   arrayRead (FILE *f)
 /***********************************************/
        /* Finds Entry s from Array  a
         * sorted in ascending order of order()
-        * If found, returns TRUE and sets *ip
-        * if not, returns FALSE and sets *ip one step left
+        * If found, returns true and sets *ip
+        * if not, returns false and sets *ip one step left
         */
 
-/* BOOL arrayFind(Array a, void *s, int *ip, int (* order)(void*, void*)) */
-BOOL arrayFind(Array a, void *s, int *ip, ArrayOrder *order)
+/* bool arrayFind(Array a, void *s, int *ip, int (* order)(void*, void*)) */
+bool arrayFind(Array a, void *s, int *ip, ArrayOrder *order)
 {
   int ord ;
   int i = 0 , j, k ;
@@ -256,29 +256,29 @@ BOOL arrayFind(Array a, void *s, int *ip, ArrayOrder *order)
   j = arrayMax(a) ;
   if (!j || (ord = order(s,uArray(a,0))) < 0)
     { if (ip) *ip = -1 ;
-      return FALSE ;
+      return false ;
     }   /* not found */
 
   if (ord == 0)
     { if (ip) *ip = 0 ;
-      return TRUE ;
+      return true ;
     }
 
   if ((ord = order(s,uArray(a,--j))) > 0)
     { if (ip) *ip = j ;
-      return FALSE ;
+      return false ;
     }
   
   if (ord == 0)
     { if (ip) *ip = j ;
-      return TRUE ;
+      return true ;
     }
 
-  while(TRUE)
+  while(true)
     { k = i + ((j-i) >> 1) ; /* midpoint */
       if ((ord = order(s, uArray(a,k))) == 0)
 	{ if (ip) *ip = k ;
-	  return TRUE ;
+	  return true ;
 	}
       if (ord > 0) i = k ;
       else j = k ;
@@ -287,7 +287,7 @@ BOOL arrayFind(Array a, void *s, int *ip, ArrayOrder *order)
     }
   if (ip)
     *ip = i ;
-  return FALSE ;
+  return false ;
 }
 
 /**************************************************************/
@@ -295,7 +295,7 @@ BOOL arrayFind(Array a, void *s, int *ip, ArrayOrder *order)
         * sorted in ascending order of order()
         */
 
-BOOL arrayRemove (Array a, void * s, int (* order)(const void*, const void*))
+bool arrayRemove (Array a, void * s, int (* order)(const void*, const void*))
 {
   int i;
 
@@ -313,11 +313,11 @@ BOOL arrayRemove (Array a, void * s, int (* order)(const void*, const void*))
 	*cp++ = *cq++ ;
 
       arrayMax(a)-- ;
-      return TRUE ;
+      return true ;
     }
   else
 
-    return FALSE ;
+    return false ;
 }
 
 /**************************************************************/
@@ -325,7 +325,7 @@ BOOL arrayRemove (Array a, void * s, int (* order)(const void*, const void*))
         * in ascending order of s.begin
         */
 
-BOOL arrayInsert(Array a, void * s, int (*order)(const void*, const void*))
+bool arrayInsert(Array a, void * s, int (*order)(const void*, const void*))
 {
   int i, j, arraySize;
 
@@ -333,7 +333,7 @@ BOOL arrayInsert(Array a, void * s, int (*order)(const void*, const void*))
     die ("arrayInsert called on bad array %x", (long unsigned int)a) ;
 
   if (arrayFind(a, s, &i,order))
-    return FALSE ;  /* no doubles */
+    return false ;  /* no doubles */
   
   arraySize = arrayMax(a) ;
   j = arraySize + 1 ;
@@ -359,7 +359,7 @@ BOOL arrayInsert(Array a, void * s, int (*order)(const void*, const void*))
     while (k--)
       *cp++ = *cq++ ;
   }
-  return TRUE ;
+  return true ;
 }
 
 /**************/

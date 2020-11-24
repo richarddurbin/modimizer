@@ -5,7 +5,7 @@
  * Description: buffered package to read arbitrary sequence files - much faster than readseq
  * Exported functions:
  * HISTORY:
- * Last edited: Jun  2 12:22 2020 (rd109)
+ * Last edited: Jun 20 13:01 2020 (rd109)
  * Created: Fri Nov  9 00:21:21 2018 (rd109)
  *-------------------------------------------------------------------
  */
@@ -19,15 +19,15 @@
 #endif
 
 #ifdef BAMIO
-BOOL bamFileOpenRead (char* filename, SeqIO *si) ;
-BOOL bamRead (SeqIO *si) ;
+bool bamFileOpenRead (char* filename, SeqIO *si) ;
+bool bamRead (SeqIO *si) ;
 void bamFileClose (SeqIO *si) ;
 #endif
 
 // global
 char* seqIOtypeName[] = { "unknown", "fasta", "fastq", "binary", "onecode", "bam" } ;
 
-SeqIO *seqIOopenRead (char *filename, int* convert, BOOL isQual)
+SeqIO *seqIOopenRead (char *filename, int* convert, bool isQual)
 {
   SeqIO *si = new0 (1, SeqIO) ;
   if (!strcmp (filename, "-")) si->gzf = gzdopen (fileno (stdin), "r") ;
@@ -45,7 +45,7 @@ SeqIO *seqIOopenRead (char *filename, int* convert, BOOL isQual)
     }
   si->line = 1 ;
   if (*si->buf == '>')
-    { si->type = FASTA ; si->isQual = FALSE ;
+    { si->type = FASTA ; si->isQual = false ;
       if (!si->convert) si->convert = dna2textAmbigConv ; /* default: need to remove whitespace */
     }
   else if (*si->buf == '@')
@@ -215,7 +215,7 @@ static void bufDouble (SeqIO *si)
 #define bufAdvanceInRecord(si) \
   { bufAdvanceEndRecord(si) ; \
     if (!si->nb) \
-      { fprintf (stderr, "incomplete sequence record line %" PRIu64 "\n", si->line) ; return FALSE ; } \
+      { fprintf (stderr, "incomplete sequence record line %" PRIu64 "\n", si->line) ; return false ; } \
   } 
 
 static void bufHardRefill (SeqIO *si, U64 n) /* like bufRefill() but for bufConfirmNbytes() */
@@ -231,13 +231,13 @@ static void bufHardRefill (SeqIO *si, U64 n) /* like bufRefill() but for bufConf
 
 #include <ctype.h>
 
-BOOL seqIOread (SeqIO *si)
+bool seqIOread (SeqIO *si)
 {
 
 #ifdef ONEIO
   if (si->type == ONE)
     { OneFile *vf = (OneFile*) si->handle ;
-      if (vf->lineType != 'S') return FALSE ; // at end of file
+      if (vf->lineType != 'S') return false ; // at end of file
       si->seqLen = oneLen(vf) ; // otherwise we are at an 'S' line
       if (si->seqLen > si->maxSeqLen)
 	{ if (si->maxSeqLen) { free (si->seqBuf) ; if (si->isQual) free (si->qualBuf) ; }
@@ -251,27 +251,27 @@ BOOL seqIOread (SeqIO *si)
 	}
       else
 	memcpy (si->seqBuf, oneString(vf), si->seqLen) ;
-      if (!oneReadLine (vf)) return FALSE ;
+      if (!oneReadLine (vf)) return false ;
       if (si->isQual)
-	{ while (vf->lineType != 'Q' && vf->lineType != 'S') if (!oneReadLine (vf)) return FALSE;
+	{ while (vf->lineType != 'Q' && vf->lineType != 'S') if (!oneReadLine (vf)) return false;
 	  if (vf->lineType == 'Q')
 	    { char *q = si->qualBuf, *e = q + si->seqLen, *qv = oneString(vf) ;
 	      while (q < e) *q++ = *qv++ - 33 ;
 	    }
 	}
-      while (vf->lineType != 'S') if (!oneReadLine (vf)) return FALSE ;
-      return TRUE ;
+      while (vf->lineType != 'S') if (!oneReadLine (vf)) return false ;
+      return true ;
     }
 #endif
 #ifdef BAMIO
   if (si->type == BAM) return bamRead (si) ;
 #endif
 
-  if (!si->nb) return FALSE ;
+  if (!si->nb) return false ;
   si->recStart = si->b - si->buf ;
   
   if (si->type == BINARY)
-    { if (si->line > si->nSeq) return FALSE ; /* have already read all the sequences */
+    { if (si->line > si->nSeq) return false ; /* have already read all the sequences */
       bufConfirmNbytes (si, (U64)(3*sizeof(int))) ;
       si->idLen = *((int*)si->b) ; si->b += sizeof(int) ;
       si->descLen = *((int*)si->b) ; si->b += sizeof(int) ;
@@ -291,7 +291,7 @@ BOOL seqIOread (SeqIO *si)
 	}
       ++si->line ;
       si->b += nBytes ; si->nb -= nBytes ;
-      return TRUE ;
+      return true ;
     }
   
   /* if get to here then this is a text file, FASTA or FASTQ */
@@ -342,7 +342,7 @@ BOOL seqIOread (SeqIO *si)
     }
 
   ++si->nSeq ;
-  return TRUE ;
+  return true ;
 }
 
 /*********************** open for writing ***********************/
@@ -369,13 +369,13 @@ SeqIO *seqIOopenWrite (char *filename, SeqIOtype type, int* convert, int qualThr
   int nameLen = strlen (filename) ;
 
   si->type = type ;
-  si->isWrite = TRUE ;
+  si->isWrite = true ;
   si->convert = convert ;
   si->isQual = (qualThresh > 0) ;
   si->qualThresh = qualThresh ;
   if (si->type == FASTA && si->isQual)
     { fprintf (stderr, "warning : can't write qualities to FASTA file %s\n", filename) ;
-      si->isQual = FALSE ;
+      si->isQual = false ;
     }
 
   if (si->type == ONE ||
@@ -419,7 +419,7 @@ SeqIO *seqIOopenWrite (char *filename, SeqIOtype type, int* convert, int qualThr
       if (!si->gzf) { free (si) ; return 0 ; }
     }
   else
-    { si->fd = open (filename, O_CREAT | O_TRUNC | O_WRONLY) ;
+    { si->fd = open (filename, O_CREAT | O_TRUNC | O_WRONLY, 00644) ;
       if (si->fd == -1) { free (si) ; return 0 ; }
     }
 
@@ -729,54 +729,54 @@ typedef struct {
   bam1_t *b ;
 } BamFile ;
 
-BOOL bamFileOpenRead (char* filename, SeqIO *si)
+bool bamFileOpenRead (char* filename, SeqIO *si)
 {
   static char *referenceFileName = 0 ; // may need to set this somehow for CRAM
   BamFile *bf = new0 (1, BamFile) ;
 
   bf->f = sam_open (filename, "r") ;
-  if (!bf->f) return FALSE ;
+  if (!bf->f) return false ;
 
   uint32_t rf = SAM_FLAG | SAM_SEQ ;
   if (si->isQual) rf |= SAM_QUAL ;
   if (hts_set_opt (bf->f, CRAM_OPT_REQUIRED_FIELDS, rf))
     { fprintf (stderr, "BamFileOpen failed to set CRAM_OPT_REQUIRED_FIELDS\n") ;
       bamFileClose (si) ;
-      return FALSE ;
+      return false ;
     }
   if (hts_set_opt (bf->f, CRAM_OPT_DECODE_MD, 0))
     { fprintf (stderr, "BamFileOpen failed to set CRAM_OPT_DECODE_MD\n") ;
       bamFileClose (si) ;
-      return FALSE ;
+      return false ;
     }
   if (referenceFileName && hts_set_fai_filename (bf->f, referenceFileName) != 0)
     { fprintf (stderr, "BamFileOpen failed to set reference genome from %s\n",
 	       referenceFileName) ;
       bamFileClose (si) ;
-      return FALSE ;
+      return false ;
     }
 
   if (!(bf->h = sam_hdr_read (bf->f)))
     { fprintf(stderr, "BamFileOpen failed to read header\n") ;
       bamFileClose (si) ;
-      return FALSE ;
+      return false ;
     }
 
   if (!(bf->b = bam_init1 ()))
     { fprintf(stderr, "BamFileOpen failed to create record buffer\n") ;
       bamFileClose (si) ;
-      return FALSE ;
+      return false ;
     }
 
   si->handle = (void*) bf ;
-  return TRUE ;
+  return true ;
 }
 
 static const char binaryAmbigComplement[16] =
   { 0, 8, 4, 12, 2, 10, 6, 14, 1, 9, 5, 13, 3, 11, 7, 15 } ;
 static const char binaryAmbig2text[] = "=ACMGRSVTWYHKDBN" ;
 
-BOOL bamRead (SeqIO *si)
+bool bamRead (SeqIO *si)
 {
   int i ;
   BamFile *bf = (BamFile*) si->handle ;
@@ -785,7 +785,7 @@ BOOL bamRead (SeqIO *si)
   if (res < -1)
     die ("BamFileRead failed to read bam record %d\n", si->nSeq) ;
   if (res == -1) // end of file
-    return FALSE ;
+    return false ;
   
   si->seqLen = bf->b->core.l_qseq ;
   if (si->seqLen > si->maxSeqLen)
@@ -821,7 +821,7 @@ BOOL bamRead (SeqIO *si)
   // NB bam_get_qname(bf->b) returns the sequence name
 
   ++si->nSeq ;
-  return TRUE ;
+  return true ;
 }
 
 void bamFileClose (SeqIO *si)

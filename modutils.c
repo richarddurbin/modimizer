@@ -5,7 +5,7 @@
  * Description:
  * Exported functions:
  * HISTORY:
- * Last edited: Feb 17 10:13 2019 (rd109)
+ * Last edited: Sep  1 21:18 2020 (rd109)
  * Created: Wed Nov 14 22:31:47 2018 (rd109)
  *-------------------------------------------------------------------
  */
@@ -14,30 +14,31 @@
 #include "seqio.h"
 
 FILE *outFile ;
-BOOL isVerbose = FALSE ;
+bool isVerbose = false ;
 
 static int addSequence (Modset *ms, char *s, int len) /* return number of hashes */
 {
   int nHash = 0 ;
   SeqhashRCiterator *mi = modRCiterator (ms->hasher, s, len) ;
-  U64 hash ; int pos ;
-  while (modRCnext (mi, &hash, &pos, 0))
-    { U32 index = modsetIndexFind (ms, hash, TRUE) ;
+  U64 kmer ; int pos ;
+  while (modRCnext (mi, &kmer, &pos, 0))
+    { U32 index = modsetIndexFind (ms, kmer, true) ;
       U16 *di = &ms->depth[index] ; ++*di ; if (!*di) *di = U16MAX ;
       ++nHash ;
     }
+  seqhashRCiteratorDestroy (mi) ;
   return nHash ;
 }
 
-static BOOL addSequenceFile (Modset *ms, char *filename, BOOL is10x)
+static bool addSequenceFile (Modset *ms, char *filename, bool is10x)
 {
   char *seq ;			/* ignore the name for now */
   int len ;
   U64 nSeq = 0, totLen = 0, totHash = 0 ;
 
   dna2indexConv['N'] = dna2indexConv['n'] = 0 ; /* to get 2-bit encoding */
-  SeqIO *si = seqIOopenRead (filename, dna2indexConv, FALSE) ; /* false for no qualities */
-  if (!si) return FALSE ;
+  SeqIO *si = seqIOopenRead (filename, dna2indexConv, false) ; /* false for no qualities */
+  if (!si) return false ;
   while (seqIOread (si))
     { ++nSeq ; totLen += si->seqLen ;
       if (is10x && (nSeq & 0x1)) totHash += addSequence (ms, sqioSeq(si)+23, si->seqLen-23) ;
@@ -46,7 +47,7 @@ static BOOL addSequenceFile (Modset *ms, char *filename, BOOL is10x)
   seqIOclose (si) ;
   fprintf (outFile, "added %llu sequences total length %llu total hashes %llu, new max %u\n",
 	   nSeq, totLen, totHash, ms->max) ;
-  return TRUE ;
+  return true ;
 }
 
 void depthHistogram (Modset *ms, FILE *f)
@@ -67,7 +68,7 @@ void reportDepths (Modset *ms, Array ma, FILE *f)
   for (i = 1 ; i <= ms->max ; ++i)
     { fprintf (f, "MH\t%llx\t%d\t%u", ms->value[i], msCopy(ms,i), ms->depth[i]) ;
       for (j = 0 ; j < arrayMax(ma) ; ++j)
-	if ((index = modsetIndexFind (arr(ma,j,Modset*), ms->value[i], FALSE)))
+	if ((index = modsetIndexFind (arr(ma,j,Modset*), ms->value[i], false)))
 	  fprintf (f, "\t%u", arr(ma,j,Modset*)->depth[index]) ;
 	else
 	  fprintf (f, "\t0") ;
@@ -81,8 +82,10 @@ void usage (void)
   fprintf (stderr, "  -v | --verbose : toggle verbose mode\n") ;
   fprintf (stderr, "  -o | --output <output filename> : '-' for stdout\n") ;
   fprintf (stderr, "  -c | --modcreate table_bits{28} kmer{19} mod{31} seed{17}: can truncate parameters\n") ;
+  fprintf (stderr, "  -w | --write <mod file> : custom binary\n") ;
   fprintf (stderr, "  -r | --read <mod file>\n") ;
-  fprintf (stderr, "  -w | --write <mod file>\n") ;
+  fprintf (stderr, "  -wt | --writetext <text file> : kmer,count,flags tab-separated\n") ;
+  fprintf (stderr, "  -rt | --readtext <text file>  : hasher params in header line\n") ;
   fprintf (stderr, "  -a | --add <read file> : add kmers from read file\n") ;
   fprintf (stderr, "  -x | --add10x <10x read file> : add kmers from 10x read file\n") ;
   fprintf (stderr, "  -m | --merge <mod file> : add kmers from read file; writes depths\n") ;
@@ -91,6 +94,7 @@ void usage (void)
   fprintf (stderr, "  -sM | --setcopyM <copyMmin> : set copyM if depth > copyMmin\n") ;
   fprintf (stderr, "  -H | --hist <outfile> : print depth histogram\n") ;
   fprintf (stderr, "  -d | --depth <outfile> <mod file>* : print depth per mod [also in other files]\n") ;
+  fprintf (stderr, "  -P | --refpaint <ref seqfile> : print depth per mod along a reference sequence\n") ;
   fprintf (stderr, "command -c or -r must come before other commands from -w onwards\n") ;
   fprintf (stderr, "read files can be fasta or fastq, gzipped or not\n") ;
   fprintf (stderr, "example usage\n") ;
@@ -152,14 +156,46 @@ int main (int argc, char *argv[])
 	ms = modsetCreate (sh, B, 0) ;
       }
     else if (!ms && ARGMATCH("-r","--read",2))
-      { if (!(f = fopen (argv[-1], "r"))) die ("failed to open mod file %s", argv[-1]) ;
+      { if (!(f = fzopen (argv[-1], "r"))) die ("failed to open mod file %s", argv[-1]) ;
 	ms = modsetRead (f) ;
 	fclose (f) ;
 	modsetSummary (ms, outFile) ;
       }
     else if (ms && ARGMATCH("-w","--write",2))
-      { if (!(f = fopen (argv[-1], "w"))) die ("failed to open mod file %s", argv[-1]) ;
+      { if (!(f = fzopen (argv[-1], "w"))) die ("failed to open mod file %s", argv[-1]) ;
 	modsetWrite (ms, f) ;
+	fclose (f) ;
+      }
+    else if (!ms && ARGMATCH("-rt","--readtext",2))
+      { if (!(f = fopen (argv[-1], "r"))) die ("failed to open text file %s", argv[-1]) ;
+	int bits, size, k, w, seed ;
+	if (fscanf (f, "modset bits %d size %d k %d w %d seed %d\n",
+		    &bits, &size, &k, &w, &seed) != 5)
+	  die ("failed to read first line of text file %s\n", argv[-1]) ;
+	Seqhash *sh = seqhashCreate (k, w, seed) ;
+	ms = modsetCreate (sh, bits, size) ;
+	static char seq[33] ; int depth ; int info ;
+	U64 *conv = new0 (256, U64) ; conv['c'] = conv['C'] = 1 ;
+	conv['g'] = conv['G'] = 2 ; conv['t'] = conv['T'] = 3 ;
+	int ii ;
+	for (i = 0 ; i < size-1 ; ++i)
+	  { if (fscanf (f, "%d\t%s\t%d\t%d\n", &ii, seq, &depth, &info) != 4)
+	      die ("bad line %d", 2+i) ;
+	    U64 x = 0 ; char *s = seq ; while (*s) x = (x << 2) | conv[*s++] ;
+	    U32 index = modsetIndexFind (ms, x, true) ; // true to add
+	    ms->value[index] = x ; ms->depth[index] = depth ; ms->info[index] = info ;
+	  }
+	fclose (f) ;
+	modsetSummary (ms, outFile) ;
+      }
+    else if (ms && ARGMATCH("-wt","--writetext",2))
+      { if (!(f = fopen (argv[-1], "w"))) die ("failed to open text file %s", argv[-1]) ;
+	Seqhash *sh = ms->hasher ;
+	fprintf (f, "modset bits %d size %d k %d w %d seed %d\n",
+		 ms->tableBits, ms->max+1, sh->k, sh->w, sh->seed) ;
+	for (i = 1 ; i <= ms->max ; ++i)
+	  fprintf (f, "%d\t%s\t%d\t%d\n",
+		   i, seqhashString(sh,ms->value[i]), ms->depth[i], ms->info[i]) ;
 	fclose (f) ;
       }
     else if (ms && ARGMATCH("-p","--prune",3))
@@ -182,12 +218,12 @@ int main (int argc, char *argv[])
 	modsetSummary (ms, outFile) ;
       }
     else if (ms && ARGMATCH("-a","--add",2))
-      { if (!addSequenceFile (ms, argv[-1], FALSE))
+      { if (!addSequenceFile (ms, argv[-1], false))
 	  die ("failed to open sequence file %s", argv[-1]) ;
 	modsetSummary (ms, outFile) ;
       }
     else if (ms && ARGMATCH("-x","--add10x",2))
-      { if (!addSequenceFile (ms, argv[-1], TRUE))
+      { if (!addSequenceFile (ms, argv[-1], true))
 	  die ("failed to open sequence file %s", argv[-1]) ;
 	modsetSummary (ms, outFile) ;
       }
@@ -220,6 +256,20 @@ int main (int argc, char *argv[])
 	reportDepths (ms, ma, fd) ;
 	arrayDestroy (ma) ;
 	fclose (fd) ;
+      }
+    else if (ms && ARGMATCH ("-P","--refpaint",2))
+      { SeqIO *si = seqIOopenRead (argv[-1], dna2indexConv, false) ; /* false for no qualities */
+	if (!si) die ("failed to open ref seq file %s", argv[-1]) ;
+	while (seqIOread (si))
+	  { printf ("painting %s length %d\n", sqioId(si), (int) si->seqLen) ;
+	    SeqhashRCiterator *mi = modRCiterator (ms->hasher, sqioSeq(si), si->seqLen) ;
+	    U64 kmer ; int pos ; U32 index ;
+	    while (modRCnext (mi, &kmer, &pos, 0))
+	      if ((index = modsetIndexFind (ms, kmer, false))) // false for do not add
+		printf ("  %d\t%d\n", pos, ms->depth[index]) ;
+	    seqhashRCiteratorDestroy (mi) ;
+	  }
+	seqIOclose (si) ;
       }
     else die ("unknown command %s - run without arguments for usage", *argv) ;
 

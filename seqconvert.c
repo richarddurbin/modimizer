@@ -5,7 +5,7 @@
  * Description: utility to convert between sequence formats
  * Exported functions:
  * HISTORY:
- * Last edited: Jun  3 01:20 2020 (rd109)
+ * Last edited: Jun 20 13:10 2020 (rd109)
  * Created: Sun Feb 17 10:23:37 2019 (rd109)
  *-------------------------------------------------------------------
  */
@@ -33,8 +33,8 @@ int main (int argc, char *argv[])
     }
   
   SeqIOtype type = UNKNOWN ;
-  BOOL isVerbose = TRUE ;
-  BOOL isGzip = FALSE ;
+  bool isVerbose = true ;
+  bool isGzip = false ;
   char *inFileName = "-" ;
   char *outFileName = "-z" ;
   int qualThresh = 0 ;
@@ -45,10 +45,10 @@ int main (int argc, char *argv[])
       else if (!strcmp (*argv, "-1")) type = ONE ;
       else if (!strcmp (*argv, "-Q") && argc >1)
 	{ --argc ; ++argv ; qualThresh = atoi (*argv) ; }
-      else if (!strcmp (*argv, "-z")) isGzip = TRUE ;
+      else if (!strcmp (*argv, "-z")) isGzip = true ;
       else if (!strcmp (*argv, "-o") && argc > 1)
 	{ --argc ; ++argv ; outFileName = *argv ; }
-      else if (!strcmp (*argv, "-S")) isVerbose = FALSE ;
+      else if (!strcmp (*argv, "-S")) isVerbose = false ;
       else if (argc == 1 && **argv != '-') inFileName = *argv ;
       else die ("unknown option %s - run without arguments for help\n", *argv) ;
       --argc ; ++argv ;
@@ -57,7 +57,7 @@ int main (int argc, char *argv[])
   if (!strcmp(outFileName, "-z") && !isGzip) outFileName = "-" ; /* remove 'z' */
   SeqIO *siOut = seqIOopenWrite (outFileName, type, 0, qualThresh) ;
   if (!siOut) die ("failed to open output file %s", outFileName) ;
-  BOOL isQual = (siOut->type == BINARY && qualThresh > 0) ||
+  bool isQual = (siOut->type == BINARY && qualThresh > 0) ||
     siOut->type == FASTQ || siOut->type == ONE ;
   SeqIO *siIn = seqIOopenRead (inFileName, 0, isQual) ;
   if (!siIn) die ("failed to open input file %s", inFileName) ;

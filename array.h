@@ -24,7 +24,7 @@
  * Exported functions:
  *              the Array type and associated macros and functions
  * HISTORY:
- * Last edited: Apr 13 02:42 2018 (rd)
+ * Last edited: Jun 20 12:57 2020 (rd109)
  *-------------------------------------------------------------------
  */
 
@@ -82,7 +82,7 @@ char    *uArrCheck (Array a, int index) ;
 #define arrp(ar,i,type)	(((type*)((ar)->base + (i)*(ar)->size)))
 #endif /* ARRAY_CHECK */
 
-BOOL    arrayWrite (Array a, FILE *f) ;
+bool    arrayWrite (Array a, FILE *f) ;
 Array   arrayRead (FILE *f) ;	/* returns 0 if fails */
 
 #define arrayMax(ar)  ((ar)->max)
@@ -90,10 +90,10 @@ Array   arrayRead (FILE *f) ;	/* returns 0 if fails */
 	/* JTM's package to hold sorted arrays of ANY TYPE */
 typedef int ArrayOrder(const void*, const void*) ;             /* call back function prototype for sorting arrays */
 #define arraySort(a,order)  qsort((a)->base, (a)->max, (a)->size, order)
-BOOL    arrayInsert(Array a, void * s, ArrayOrder *order);
-BOOL    arrayRemove(Array a, void * s, ArrayOrder *order);
+bool    arrayInsert(Array a, void * s, ArrayOrder *order);
+bool    arrayRemove(Array a, void * s, ArrayOrder *order);
 void    arrayCompress(Array a) ;
-BOOL    arrayFind(Array a, void *s, int *ip, ArrayOrder *order);
+bool    arrayFind(Array a, void *s, int *ip, ArrayOrder *order);
 
 #ifdef ARRAY_REPORT
 	/* status and memory monitoring */

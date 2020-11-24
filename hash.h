@@ -25,8 +25,8 @@
       - support removal of objects, with free-list to reuse indices of removed objects
  * Exported functions:
  * HISTORY:
- * Last edited: Jan 24 07:17 2019 (rd109)
- * * Jan 24 07:01 2019 (rd109): restructured so hashAdd() and hashFind() return BOOL 
+ * Last edited: Sep 17 00:37 2020 (rd109)
+ * * Jan 24 07:01 2019 (rd109): restructured so hashAdd() and hashFind() return bool 
          and the index value is returned via a pointer, as for DICT.
  * Created: Thu Jan 13 10:57:20 2011 (rd)
  *-------------------------------------------------------------------
@@ -47,16 +47,16 @@ static  HASHKEY _hk ;
 HASH hashCreate (int n) ;
 void hashDestroy (HASH h) ;
 void hashClear (HASH h) ;
-BOOL hashAdd  (HASH h, HASHKEY k, int *index) ; /* return TRUE if added, fill index if non-zero */
-BOOL hashFind (HASH h, HASHKEY k, int *index) ; /* return TRUE if found, fill index if non-zero */
-BOOL hashRemove (HASH h, HASHKEY k) ; /* if found, remove and return TRUE, else FALSE */
+bool hashAdd  (HASH h, HASHKEY k, int *index) ; /* return TRUE if added, fill index if non-zero */
+bool hashFind (HASH h, HASHKEY k, int *index) ; /* return TRUE if found, fill index if non-zero */
+bool hashRemove (HASH h, HASHKEY k) ; /* if found, remove and return TRUE, else FALSE */
 int  hashCount (HASH h) ;	      /* number of keys stored in hash */
 
 /* iterator to get all key-value pairs, in arbitrary order */
 /* note that if nothing is removed then values are incrementing from 1 to n_added */
 /* note also that adding while iterating can invalidate the iterator */
 void hashInitIterator (HASH h) ;
-int  hashNextKeyValue (HASH h, HASHKEY *kp, int *ip) ; /* returns value, 0 if done */
+bool hashNextKeyValue (HASH h, HASHKEY *kp, int *ip) ;
 
 void hashStats (void) ;		/* overall stats on package/performance */
 

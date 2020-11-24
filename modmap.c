@@ -5,7 +5,7 @@
  * Description:
  * Exported functions:
  * HISTORY:
- * Last edited: Feb 17 21:17 2019 (rd109)
+ * Last edited: Aug 13 22:12 2020 (rd109)
  * Created: Sat Oct 27 20:37:44 2018 (rd109)
  *-------------------------------------------------------------------
  */
@@ -20,7 +20,7 @@
 
 int numThreads = 1 ;		/* default to serial - reset if multi-threaded */
 FILE *outFile ;			/* initialise to stdout at start of main() */
-BOOL isVerbose = FALSE ;
+bool isVerbose = false ;
 
 struct {
   int k ;
@@ -90,12 +90,12 @@ void referencePack (Reference *ref)
     ref->rev[ref->loc[*ri] + ref->depth[*ri]++] = i ;
 }
 
-void referenceFastaRead (Reference *ref, char *filename, BOOL isAdd)
+void referenceFastaRead (Reference *ref, char *filename, bool isAdd)
 {
   U64 totLen = 0 ;
   
   dna2indexConv['N'] = dna2indexConv['n'] = 0 ; /* to get 2-bit encoding */
-  SeqIO *si = seqIOopenRead (filename, dna2indexConv, FALSE) ;
+   SeqIO *si = seqIOopenRead (filename, dna2indexConv, false) ;
   if (!si) die ("failed to read reference sequence file %s", filename) ;
   while (seqIOread (si)) 
     { int id ;
@@ -104,9 +104,9 @@ void referenceFastaRead (Reference *ref, char *filename, BOOL isAdd)
       array (ref->len, id, int) = si->seqLen ;
       totLen += si->seqLen ;
       SeqhashRCiterator *mi = modRCiterator (ref->ms->hasher, sqioSeq(si), si->seqLen) ;
-      U64 hash ; int pos ;
-      while (modRCnext (mi, &hash, &pos, 0))
-	{ U32 index = modsetIndexFind (ref->ms, hash, isAdd) ;
+      U64 kmer ; int pos ;
+      while (modRCnext (mi, &kmer, &pos, 0))
+	{ U32 index = modsetIndexFind (ref->ms, kmer, isAdd) ;
 	  if (index)
 	    { if (ref->max+1 >= ref->size) die ("reference size overflow") ;
 	      ref->index[ref->max] = index ;
@@ -191,15 +191,15 @@ void queryProcess (Reference *ref, char *filename)
   Array seeds = 0 ;
 
   dna2indexConv['N'] = dna2indexConv['n'] = 0 ; /* to get 2-bit encoding */
-  SeqIO *si = seqIOopenRead (filename, dna2indexConv, FALSE) ;
+  SeqIO *si = seqIOopenRead (filename, dna2indexConv, false) ;
   if (!si) die ("failed to read query sequence file %s", filename) ;
   while (seqIOread (si)) 
     { SeqhashRCiterator *mi = modRCiterator (ref->ms->hasher, sqioSeq(si), si->seqLen) ;
-      U64 hash ; int pos ;
+      U64 kmer ; int pos ;
       seeds = arrayReCreate (seeds, 1024, Seed) ;
       int missed = 0, copy[4] ; copy[1] = copy[2] = copy[3] = 0 ;
-      while (modRCnext (mi, &hash, &pos, 0))
-	{ U32 index = modsetIndexFind (ref->ms, hash, FALSE) ;
+      while (modRCnext (mi, &kmer, &pos, 0))
+	{ U32 index = modsetIndexFind (ref->ms, kmer, false) ;
 	  Seed *s = arrayp(seeds,arrayMax(seeds),Seed) ;
 	  s->index = index ; s->pos = pos ;
 	  if (index) ++copy[msCopy(ref->ms,index)] ;
@@ -217,7 +217,7 @@ void queryProcess (Reference *ref, char *filename)
 	{ Seed *s = arrp (seeds, i, Seed) ;
 	  if (s->index && !msIsCopyM(ref->ms,s->index)) /* ignore multi-hits for now */
 	    { U32 loc = ref->rev[ref->loc[s->index]] ;
-	      BOOL is1 = msIsCopy1(ref->ms,s->index) ;
+	      bool is1 = msIsCopy1(ref->ms,s->index) ;
 	      if (isVerbose)
 		{ if (is1)
 		    printf ("  %6d\t%s %d\n", s->pos,
@@ -229,33 +229,34 @@ void queryProcess (Reference *ref, char *filename)
 			      dictName(ref->dict,ref->id[loc2]), ref->offset[loc2]) ;
 		    }
 		}
-	      BOOL endBlock = FALSE ;
-	      if (!loc0 || ref->id[loc] != ref->id[loc0]) endBlock = TRUE ;
+	      bool endBlock = false ;
+	      if (!loc0 || ref->id[loc] != ref->id[loc0]) endBlock = true ;
 	      else if (loc0 < locN)
-		{ if (loc < locN) endBlock = TRUE ;
-		  int d = locN - loc0 - iN + i0 ; if (d > 50 || d < -50) endBlock = TRUE ;
+		{ if (loc < locN) endBlock = true ;
+		  int d = locN - loc0 - iN + i0 ; if (d > 50 || d < -50) endBlock = true ;
 		}
 	      else if (loc0 > locN)
-		{ if (loc > locN) endBlock = TRUE ;
-		  int d = loc0 - locN - iN + i0 ; if (d > 50 || d < -50) endBlock = TRUE ;
+		{ if (loc > locN) endBlock = true ;
+		  int d = loc0 - locN - iN + i0 ; if (d > 50 || d < -50) endBlock = true ;
 		}
 	      if (endBlock && loc0 && !is1) /* try the second loc */
 		{ loc = ref->rev[ref->loc[s->index]+1] ;
-		  endBlock = FALSE ;
-		  if (ref->id[loc] != ref->id[loc0]) endBlock = TRUE ;
+		  endBlock = false ;
+		  if (ref->id[loc] != ref->id[loc0]) endBlock = true ;
 		   else if (loc0 < locN)
-		     { if (loc < locN) endBlock = TRUE ;
-		       int d = locN - loc0 - iN + i0 ; if (d > 50 || d < -50) endBlock = TRUE ;
+		     { if (loc < locN) endBlock = true ;
+		       int d = locN - loc0 - iN + i0 ; if (d > 50 || d < -50) endBlock = true ;
 		     }
 		   else if (loc0 > locN)
-		     { if (loc > locN) endBlock = TRUE ;
-		       int d = loc0 - locN - iN + i0 ; if (d > 50 || d < -50) endBlock = TRUE ;
+		     { if (loc > locN) endBlock = true ;
+		       int d = loc0 - locN - iN + i0 ; if (d > 50 || d < -50) endBlock = true ;
 		     }
 		}
 	      if (endBlock)
 		{ if (n1 > 2)
 		    fprintf (outFile, "M\t%s\t%d\t%d\t%d\t%s\t%d\t%d\t%d %d\t%.2f\t%.2f\n",
-			     sqioId(si), arrp(seeds,i0,Seed)->pos, arrp(seeds,iN,Seed)->pos, len,
+			     sqioId(si), arrp(seeds,i0,Seed)->pos, arrp(seeds,iN,Seed)->pos,
+			     arrp(seeds,iN,Seed)->pos - arrp(seeds,i0,Seed)->pos,
 			     dictName(ref->dict,ref->id[loc0]),
 			     ref->offset[loc0], ref->offset[locN],
 			     n1, n2, (n1+n2) / (double)((locN>loc0) ? (locN-loc0) : (loc0-locN)),
@@ -267,7 +268,8 @@ void queryProcess (Reference *ref, char *filename)
 	}
       if (n2 > 2)
 	fprintf (outFile, "M\t%s\t%d\t%d\t%d\t%s\t%d\t%d\t%d %d\t%.2f\t%.2f\n",
-		 sqioId(si), arrp(seeds,i0,Seed)->pos, arrp(seeds,iN,Seed)->pos, len,
+		 sqioId(si), arrp(seeds,i0,Seed)->pos, arrp(seeds,iN,Seed)->pos,
+		 arrp(seeds,iN,Seed)->pos - arrp(seeds,i0,Seed)->pos,
 		 dictName(ref->dict,ref->id[loc0]),
 		 ref->offset[loc0], ref->offset[locN],
 		 n1, n2, (n1+n2) / (double)((locN>loc0) ? (locN-loc0) : (loc0-locN)),
@@ -359,7 +361,7 @@ int main (int argc, char *argv[])
 		 params.k, params.w, params.s) ;
 	Modset *ms = modsetCreate (hasher, params.B, 0) ;
 	ref = referenceCreate (ms, 1 << 26) ;
-	referenceFastaRead (ref, argv[-1], TRUE) ;
+	referenceFastaRead (ref, argv[-1], true) ;
       }
     else if (ARGMATCH("-q","--query",2))
       { if (!ref) die ("need to read a reference before processing query sequences") ;

@@ -20,7 +20,7 @@
  * -------------------------------------------------------------------
  * Exported functions:
  * HISTORY:
- * Last edited: Jan 24 07:16 2019 (rd109)
+ * Last edited: Sep 17 00:56 2020 (rd109)
  * Created: Fri Jan  7 09:20:25 2011 (rd)
  *-------------------------------------------------------------------
  */
@@ -45,7 +45,7 @@ typedef struct {
   unsigned int mask ;		/* 2**nbits-1 */
   int n ;			/* number of items stored */
   int guard ;			/* number of slots to fill before doubling */
-  int *keys ;			/* array of integer keys stored */
+  long int *keys ;		/* array of keys stored */
   int *values ;			/* array of indices */
   Array freeList ;     		/* list of removed integers that can be reused */
   int nFree ;			/* number in free list */
@@ -86,8 +86,8 @@ HASH hashCreate (int n)
   while (n >>= 1) ++h->nbits ; /* number of left most bit + 1 */
   h->mask = (1 << h->nbits) - 1 ;
   h->guard = (1 << (h->nbits - 1)) ;
-  h->keys = (int*) myalloc (sizeof(int)*(1 << h->nbits)) ;
-  memset (h->keys, 0, sizeof(int)*(1 << h->nbits)) ;
+  h->keys = (long int*) myalloc (sizeof(long int)*(1 << h->nbits)) ;
+  memset (h->keys, 0, sizeof(long int)*(1 << h->nbits)) ;
   h->values = (int*) myalloc (sizeof(int)*(1 << h->nbits)) ;
   h->n = 0 ;
   h->freeList = arrayCreate (32, int) ;
@@ -110,7 +110,7 @@ void hashClear (HASH hx)
 { 
   TRUE_HASH *h = (TRUE_HASH*) hx ;
   h->n = 0 ;
-  memset (h->keys, 0, sizeof(int)*(1 << h->nbits)) ;
+  memset (h->keys, 0, sizeof(long int)*(1 << h->nbits)) ;
   h->freeList = arrayReCreate (h->freeList, 32, int) ;
 }
 
@@ -120,7 +120,7 @@ static void hashDouble (TRUE_HASH *h)
 {
   int oldsize, newsize ;
   long int hash, delta = 0 ;
-  int *oldKeys, *kp ;
+  long int *oldKeys, *kp ;
   int *oldValues, i ;
   HASHKEY hk ;
 
@@ -131,15 +131,15 @@ static void hashDouble (TRUE_HASH *h)
   h->guard = (1 << (h->nbits - 1)) ;
   
   oldKeys = h->keys ;
-  h->keys  = (int*) myalloc (sizeof(int)*newsize) ;
-  memset (h->keys, 0, sizeof(int)*(1 << h->nbits)) ;
+  h->keys  = (long int*) myalloc (sizeof(long int)*newsize) ;
+  memset (h->keys, 0, sizeof(long int)*(1 << h->nbits)) ;
   oldValues = h->values ;
   h->values = (int*) myalloc (sizeof(int)*newsize) ;
 
   for (i = 0, kp = oldKeys ; i < oldsize ; ++i, ++kp)
     if (*kp && *kp != REMOVED)
       { hk.i = *kp ; HASH_FUNC(hk) ;
-        while (TRUE)
+        while (true)
           if (!h->keys[hash])  /* don't need to test REMOVED */
 	    { h->keys[hash] = *kp ;
 	      h->values[hash] = oldValues[i] ;
@@ -160,22 +160,22 @@ static void hashDouble (TRUE_HASH *h)
 
 /************************ Searches  ************************************/
 
-BOOL hashFind (HASH hx, HASHKEY k, int *index)
+bool hashFind (HASH hx, HASHKEY k, int *index)
 /* if found, returns index, else returns 0 */
 {
   TRUE_HASH *h = (TRUE_HASH*) hx ;
   long int hash, delta = 0 ;
 
   HASH_FUNC(k) ;
-  while (TRUE)
+  while (true)
     if (h->keys[hash] == k.i)
       { nFound++ ;
 	if (index) *index = h->values[hash] - 1 ;
-	return TRUE ;
+	return true ;
       }
     else if (!h->keys[hash])
       { nNotFound++ ;
-	return FALSE ;
+	return false ;
       }
     else 
       { nBounced++ ;
@@ -186,8 +186,8 @@ BOOL hashFind (HASH hx, HASHKEY k, int *index)
 
 /************************ insertions  ************************************/
 
-     /* if already there returns FALSE, else inserts and returns TRUE */
-BOOL hashAdd (HASH hx, HASHKEY k, int *index)
+     /* if already there returns false, else inserts and returns TRUE */
+bool hashAdd (HASH hx, HASHKEY k, int *index)
 {
   TRUE_HASH *h = (TRUE_HASH*) hx ;
   long int hash, delta = 0 ;
@@ -197,7 +197,7 @@ BOOL hashAdd (HASH hx, HASHKEY k, int *index)
     hashDouble (h) ;
 
   HASH_FUNC(k) ;
-  while (TRUE)
+  while (true)
     if (!h->keys[hash] || h->keys[hash] == REMOVED)	/* free slot to fill */
       { if (!h->keys[hash]) --h->guard ;
 	h->keys[hash] = k.i ;
@@ -207,12 +207,12 @@ BOOL hashAdd (HASH hx, HASHKEY k, int *index)
 	  h->values[hash] = ++h->n  ;
 	nAdded++ ;
 	if (index) *index = h->values[hash] - 1 ;
-	return TRUE ;
+	return true ;
       }
     else if (h->keys[hash] == k.i)		/* already there */
       { ++nFound ;
 	if (index) *index = h->values[hash] - 1 ;
-	return FALSE ;
+	return false ;
       }
     else
       { nBounced++ ;
@@ -223,22 +223,22 @@ BOOL hashAdd (HASH hx, HASHKEY k, int *index)
  
 /************************ Removals ************************************/
 
-BOOL hashRemove (HASH hx, HASHKEY k)
+bool hashRemove (HASH hx, HASHKEY k)
 {
   TRUE_HASH *h = (TRUE_HASH*) hx ;
   long int hash, delta = 0 ;
 
   HASH_FUNC(k) ;
-  while (TRUE)
+  while (true)
     if (h->keys[hash] == k.i)
       { h->keys[hash] = REMOVED ;
 	array(h->freeList, ++h->nFree, int) = h->values[hash] ;
 	++nFound ;
-	return TRUE ;
+	return true ;
       }
     else if (!h->keys[hash])
       { nNotFound++ ;
-	return FALSE ;
+	return false ;
       }
     else 
       { nBounced++ ;
@@ -256,7 +256,7 @@ void hashInitIterator (HASH hx)
   h->iter = -1 ;
 }
 
-int hashNextKeyValue (HASH hx, HASHKEY *kp, int *ip)
+bool hashNextKeyValue (HASH hx, HASHKEY *kp, int *ip)
 {
   TRUE_HASH *h = (TRUE_HASH*) hx ;
   int size = 1 << h->nbits ;
@@ -264,16 +264,16 @@ int hashNextKeyValue (HASH hx, HASHKEY *kp, int *ip)
   while (++h->iter < size)
     if (h->keys[h->iter] && h->keys[h->iter] != REMOVED)
       { kp->i = h->keys[h->iter] ;
-	*ip = h->values[h->iter] ;
-	return *ip ;
+	if (ip) *ip = h->values[h->iter] - 1 ;
+	return true ;
       }
 
-  return 0 ;			/* done if reached end of table */
+  return false ;	/* done if reached end of table */
 }
 
 /**********************************************************************/
 
-int hashCount (HASH hx) { TRUE_HASH *h = (TRUE_HASH*) hx ; return (h->n) ; }
+int hashCount (HASH hx) { TRUE_HASH *h = (TRUE_HASH*) hx ; return h->n - h->nFree ; }
 
 void hashStats (void)
 {

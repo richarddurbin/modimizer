@@ -5,7 +5,7 @@
  * Description: core utility functions
  * Exported functions:
  * HISTORY:
- * Last edited: Jun  2 10:03 2020 (rd109)
+ * Last edited: Jun 20 13:06 2020 (rd109)
  * * Feb 22 14:52 2019 (rd109): added fzopen()
  * Created: Thu Aug 15 18:32:26 1996 (rd)
  *-------------------------------------------------------------------
@@ -175,7 +175,7 @@ static struct rusage rOld, rFirst ;
 
 void timeUpdate (FILE *f)
 {
-  static BOOL isFirst = 1 ;
+  static bool isFirst = 1 ;
   struct rusage rNew ;
   int secs, usecs ;
 
@@ -195,7 +195,7 @@ void timeUpdate (FILE *f)
     }
   else
     { rFirst = rNew ;
-      isFirst = FALSE ;
+      isFirst = false ;
     }
 
   rOld = rNew ;

@@ -4,7 +4,7 @@
 CFLAGS= -g				# for debugging
 #CFLAGS= -03 -DOMP -fopenmp		# for OMP parallelisation - doesn't compile on Mac
 
-ALL=modmap modasm modutils composition seqconvert # mod10x fq2b 
+ALL=modmap modasm modutils composition seqconvert seqhoco modrep # mod10x fq2b 
 
 DESTDIR=~/bin
 
@@ -14,9 +14,8 @@ install:
 	cp $(ALL) $(DESTDIR)
 
 clean:
-	$(RM) *.o *~ modmap modasm modutils composition seqconvert # mod10x fq2b 
+	$(RM) *.o *~ $(ALL) # mod10x fq2b 
 	\rm -r *.dSYM
-
 
 ### object files
 
@@ -42,6 +41,9 @@ seqio.o: seqio.c seqio.h
 modmap: modmap.c seqio.o seqhash.o modset.o $(UTILS_OBJS)
 	$(CC) $(CFLAGS) $^ -o $@ $(SEQIO_LIBS)
 
+modrep: modrep.c seqio.o seqhash.o modset.o $(UTILS_OBJS)
+	$(CC) $(CFLAGS) $^ -o $@ $(SEQIO_LIBS)
+
 modasm: modasm.c seqio.o seqhash.o modset.o $(UTILS_OBJS)
 	$(CC) $(CFLAGS) $^ -o $@ $(SEQIO_LIBS)
 
@@ -52,6 +54,9 @@ composition: composition.c seqio.o $(UTILS_OBJS)
 	$(CC) $(CFLAGS) $^ -o $@ $(SEQIO_LIBS)
 
 seqconvert: seqconvert.c seqio.o $(UTILS_OBJS)
+	$(CC) $(CFLAGS) $^ -o $@ $(SEQIO_LIBS)
+
+seqhoco: seqhoco.c seqio.o $(UTILS_OBJS)
 	$(CC) $(CFLAGS) $^ -o $@ $(SEQIO_LIBS)
 
 #fq2b: fq2b.c $(UTILS_OBJS)

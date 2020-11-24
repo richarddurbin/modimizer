@@ -5,7 +5,7 @@
  * Description:
  * Exported functions:
  * HISTORY:
- * Last edited: May 11 22:21 2020 (rd109)
+ * Last edited: Jun 20 13:03 2020 (rd109)
  * Created: Sat Nov 10 08:51:49 2018 (rd109)
  *-------------------------------------------------------------------
  */
@@ -21,11 +21,11 @@ extern char* seqIOtypeName[] ; // = { "unknown", "fasta", "fastq", "binary", "on
 
 typedef struct {
   SeqIOtype type ;
-  BOOL isWrite ;
+  bool isWrite ;
   U64 nSeq, totIdLen, totDescLen, totSeqLen, maxIdLen, maxDescLen, maxSeqLen ;
   U64 idLen, descLen, seqLen ;
   U64 idStart, descStart, seqStart, qualStart ;
-  BOOL isQual ;			/* if set then convert qualities by subtracting 33 (FASTQ) */
+  bool isQual ;			/* if set then convert qualities by subtracting 33 (FASTQ) */
   int qualThresh ;		/* used for binary representation of qualities */
   /* below here private */
   U64 bufSize ;
@@ -48,8 +48,8 @@ typedef struct {
 /* Add 0 terminators to ids.  Convert sequences in place if convert != 0, and quals if isQual. */
 /* Potential for future storage of (packed?) sequences with counts up front. */ 
 
-SeqIO *seqIOopenRead (char *filename, int* convert, BOOL isQual) ; /* can use "-" for stdin */
-BOOL seqIOread (SeqIO *si) ;
+SeqIO *seqIOopenRead (char *filename, int* convert, bool isQual) ; /* can use "-" for stdin */
+bool seqIOread (SeqIO *si) ;
 #define sqioId(si)   ((si)->buf+(si)->idStart)
 #define sqioDesc(si) ((si)->buf+(si)->descStart)
 #define sqioSeq(si)  ((si)->type >= BINARY ? (si)->seqBuf : (si)->buf+(si)->seqStart)

@@ -5,7 +5,7 @@
  * Description: includes standard system headers and own headers
  * Exported functions:
  * HISTORY:
- * Last edited: Jun  2 09:59 2020 (rd109)
+ * Last edited: Jun 20 13:03 2020 (rd109)
  * Created: Wed Jan  5 16:13:48 2011 (rd)
  *-------------------------------------------------------------------
  */
@@ -15,13 +15,11 @@
 #include <inttypes.h>		/* for standard size int types and their print macros */
 #include <string.h>		/* memset() */
 #include <limits.h>		/* INT_MAX etc. */
+#include <stdbool.h>		/* bool, true, false */
 #include <assert.h>
 
 #ifndef UTILS_DEFINED
 #define UTILS_DEFINED
-typedef char BOOL ;
-#define TRUE 1
-#define FALSE 0
 
 typedef int8_t I8 ;
 const static I8 I8MAX = 0x7f ;

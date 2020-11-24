@@ -20,7 +20,7 @@
  * Description:
  * Exported functions:
  * HISTORY:
- * Last edited: Jan 24 07:06 2019 (rd109)
+ * Last edited: Jun 20 13:04 2020 (rd109)
  * Created: July 2003 (rd)
  *-------------------------------------------------------------------
  */
@@ -87,19 +87,19 @@ void dictDestroy (DICT *dict)
 
 /*****************************/
 
-BOOL dictWrite (DICT *dict, FILE *f)
+bool dictWrite (DICT *dict, FILE *f)
 {
-  if (fwrite (&dict->dim,sizeof(int),1,f) != 1) return FALSE ;
-  if (fwrite (&dict->max,sizeof(int),1,f) != 1) return FALSE ;
-  if (fwrite (dict->table,sizeof(int),dict->size,f) != dict->size) return FALSE ;
-  if (fwrite (dict->names,sizeof(char*),dict->max+1,f) != dict->max+1) return FALSE ;
+  if (fwrite (&dict->dim,sizeof(int),1,f) != 1) return false ;
+  if (fwrite (&dict->max,sizeof(int),1,f) != 1) return false ;
+  if (fwrite (dict->table,sizeof(int),dict->size,f) != dict->size) return false ;
+  if (fwrite (dict->names,sizeof(char*),dict->max+1,f) != dict->max+1) return false ;
   int i ;
   for (i = 1 ; i <= dict->max ; ++i)
     { int len = strlen(dict->names[i]) ;
-      if (fwrite (&len,sizeof(int),1,f) != 1) return FALSE ;
-      if (fwrite (dict->names[i],1,len,f) != len) return FALSE ;
+      if (fwrite (&len,sizeof(int),1,f) != 1) return false ;
+      if (fwrite (dict->names[i],1,len,f) != len) return false ;
     }
-  return TRUE ;
+  return true ;
 }
   
 DICT *dictRead (FILE *f)
@@ -123,7 +123,7 @@ DICT *dictRead (FILE *f)
 
 static int newPos ;		/* communication between dictFind() and dictAdd() */
 
-BOOL dictFind (DICT *dict, char *s, int *ip)
+bool dictFind (DICT *dict, char *s, int *ip)
 {
   int i, x, d ;
 
@@ -133,11 +133,11 @@ BOOL dictFind (DICT *dict, char *s, int *ip)
   x = hashString (s, dict->dim, 0) ;
   if (!(i = dict->table[x]))
     { newPos = x ; 
-      return FALSE ; 
+      return false ; 
     }
   else if (!strcmp (s, dict->names[i]))
     { if (ip) *ip = i-1 ; 
-      return TRUE ; 
+      return true ; 
     }
   else
     { d = hashString (s, dict->dim, 1) ;
@@ -145,11 +145,11 @@ BOOL dictFind (DICT *dict, char *s, int *ip)
 	{ x = (x + d) & ((1 << dict->dim) - 1) ;
 	  if (!(i = dict->table[x]))
 	    { newPos = x ; 
-	      return FALSE ; 
+	      return false ; 
 	    }
 	  else if (!strcmp (s, dict->names[i]))
 	    { if (ip) *ip = i-1 ; 
-	      return TRUE ; 
+	      return true ; 
 	    }
 	}
     }
@@ -157,11 +157,11 @@ BOOL dictFind (DICT *dict, char *s, int *ip)
 
 /*****************************/
 
-BOOL dictAdd (DICT *dict, char *s, int *ip)
+bool dictAdd (DICT *dict, char *s, int *ip)
 {
   int i, x ;
 
-  if (dictFind (dict, s, ip)) return FALSE ;
+  if (dictFind (dict, s, ip)) return false ;
 
   i = ++dict->max ;
   dict->table[newPos] = i ;
@@ -191,7 +191,7 @@ BOOL dictAdd (DICT *dict, char *s, int *ip)
       free (dict->table) ; dict->table = newTable ;
     }
 
-  return TRUE ;
+  return true ;
 }
 
 /*****************************/
