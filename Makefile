@@ -1,10 +1,10 @@
 # makefile for modimizer, developed on Richard's Mac.
 
 #CFLAGS= -O3
-CFLAGS= -g				# for debugging
+CFLAGS= -g -target arm64-apple-macos11				# for debugging
 #CFLAGS= -03 -DOMP -fopenmp		# for OMP parallelisation - doesn't compile on Mac
 
-ALL=modmap modasm modutils composition seqconvert seqhoco modrep # mod10x fq2b 
+ALL=modmap modasm modutils composition seqconvert seqhoco modrep modtype # mod10x fq2b 
 
 DESTDIR=~/bin
 
@@ -25,7 +25,7 @@ $(UTILS_OBJS): utils.h $(UTILS_HEADERS)
 
 ONE_DIR = ../vgp-tools/Core
 HTS_DIR = $(PWD)/../htslib
-SEQIO_OPTS = -DONEIO -I$(ONE_DIR) -DBAMIO -I$(HTS_DIR)/htslib/
+SEQIO_OPTS = -DONEIO -DBAMIO -I$(HTS_DIR)/htslib/
 SEQIO_LIBS = -L$(ONE_DIR) -lONE -L$(HTS_DIR) -Wl,-rpath $(HTS_DIR) -lhts -lm -lbz2 -llzma -lcurl -lz 
 # the "-Wl,-rpath $(HTS_DIR)" incantation is needed for local dynamic linking if htslib is not installed centrally
 
@@ -35,6 +35,9 @@ modset.c: modset.h
 
 seqio.o: seqio.c seqio.h 
 	$(CC) $(CFLAGS) $(SEQIO_OPTS) -c $^
+
+ONElib.o: ONElib.c ONElib.h 
+	$(CC) $(CFLAGS) -c $^
 
 ### programs
 
@@ -57,6 +60,9 @@ seqconvert: seqconvert.c seqio.o $(UTILS_OBJS)
 	$(CC) $(CFLAGS) $^ -o $@ $(SEQIO_LIBS)
 
 seqhoco: seqhoco.c seqio.o $(UTILS_OBJS)
+	$(CC) $(CFLAGS) $^ -o $@ $(SEQIO_LIBS)
+
+modtype: modtype.c seqio.o $(UTILS_OBJS) ONElib.o
 	$(CC) $(CFLAGS) $^ -o $@ $(SEQIO_LIBS)
 
 #fq2b: fq2b.c $(UTILS_OBJS)
